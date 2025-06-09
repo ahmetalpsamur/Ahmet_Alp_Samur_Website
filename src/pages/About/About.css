@@ -1,0 +1,60 @@
+/* About.css */
+.about-page {
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+}
+
+.timeline-container {
+  min-height: 100vh;
+}
+
+.timeline-item {
+  opacity: 1; /* GSAP animasyonu için başlangıçta görünür */
+}
+
+/* Responsive ayarlar */
+@media (max-width: 768px) {
+  .timeline-line {
+    left: 2rem !important;
+  }
+  
+  .timeline-item {
+    justify-content: flex-start !important;
+  }
+  
+  .timeline-item > div {
+    width: 100% !important;
+    margin-left: 3rem !important;
+    margin-right: 0 !important;
+  }
+  
+  .timeline-dot {
+    left: 2rem !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-50%) !important;
+  }
+  
+  .timeline-item .bg-white {
+    left: 2rem !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-50%) !important;
+  }
+}
+
+/* Scrollbar stil */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}

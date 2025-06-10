@@ -5,6 +5,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import logo from "../../assets/Logo/ahmetalpsamur_logo.png";
 
+import Threads from '../../components/Header/Thread';
+
 gsap.registerPlugin(ScrollTrigger);
 
 const Header = () => {
@@ -131,18 +133,18 @@ const Header = () => {
           transition={{ duration: 0.6, ease: "backOut" }}
           className="mx-auto md:mx-4"
         >
-          <Link 
-            ref={logoRef} 
-            to="/" 
+          <Link
+            ref={logoRef}
+            to="/"
             className="flex items-center group"
           >
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-white/10 group-hover:bg-white/20 blur-md group-hover:blur-lg transition-all duration-500 opacity-0 group-hover:opacity-100" />
               <div className="relative z-10 p-1 rounded-full border border-white/10 group-hover:border-white/20 transition-all duration-500">
-                <img 
-                  src={logo} 
+                <img
+                  src={logo}
                   alt="Ahmet Alp Samur Logo"
-                  className="h-20 w-auto transition-transform duration-300 group-hover:scale-105" 
+                  className="h-20 w-auto transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
             </div>
@@ -179,7 +181,7 @@ const Header = () => {
         </nav>
 
         {/* Mobile Menu Button */}
-        <button 
+        <button
           className="md:hidden text-white focus:outline-none z-50"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle menu"
@@ -191,47 +193,65 @@ const Header = () => {
           </div>
         </button>
 
+
+
         {/* Mobile Menu */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div 
-              className="md:hidden fixed inset-0 bg-black/90 backdrop-blur-lg pt-24 px-6 z-40"
+            <motion.div
+              className="md:hidden fixed inset-0 bg-black/90 backdrop-blur-lg pt-20 px-6 z-40"
               initial="hidden"
               animate="visible"
               exit="exit"
               variants={mobileMenuVariants}
             >
               <motion.ul className="flex flex-col space-y-8">
-                {navItems.map(({ path, name }) => (
-                  <motion.li 
+                {navItems.map(({ path, name }, index) => (
+                  <motion.li
                     key={path}
                     variants={mobileItemVariants}
                     whileHover={{ x: 5 }}
                     transition={{ type: 'spring', stiffness: 300 }}
+                    className="relative" // Ekledim
                   >
                     <Link
                       to={path}
-                      className={`text-2xl font-medium ${location.pathname === path ? 'text-white' : 'text-white/70'}`}
+                      className={`text-5xl font-[PowerGrotesk] font-medium uppercase px-4 py-2 rounded transition-all duration-300
+                    ${location.pathname === path ? 'bg-white text-black' : 'text-white/70'}
+                  `}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {name}
+                      {/* Metnin hemen yanında indeks */}
+                      <span className="text-xs font-mono ml-1 inline-block align-top -translate-y-0.25">
+                        ({String(index).padStart(2, '0')})
+                      </span>
                     </Link>
                   </motion.li>
                 ))}
+                    <Threads
+    amplitude={2}
+    distance={0}
+    enableMouseInteraction={true}
+  />
               </motion.ul>
               
-              <motion.div 
+              <motion.div
                 className="absolute bottom-8 left-0 right-0 text-center text-white/50 text-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
+                
               >
+
                 © {new Date().getFullYear()} Ahmet Alp Samur
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
+
     </header>
   );
 };

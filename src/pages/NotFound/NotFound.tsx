@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import videoBg from '../../assets/Video/404-video/404_background_cut_delete.mp4';
+import FuzzyText from '../../components/FuzzyText'; // FuzzyText bileşenini import ediyoruz
 
 const NotFound = () => {
   return (
@@ -18,7 +19,18 @@ const NotFound = () => {
 
       {/* İçerik */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-[#EAEAEA] p-4 text-center">
-        <h1 className="text-9xl font-bold text-white mb-4">404</h1>
+        <div className="mb-4">
+          <FuzzyText 
+            baseIntensity={0.2} 
+            hoverIntensity={0.5} 
+            enableHover={true}
+            fontSize="9rem"
+            fontWeight={900}
+            color="#ffffff"
+          >
+            404
+          </FuzzyText>
+        </div>
         <h2 className="text-3xl font-semibold mb-6">Kayboldun Belki de Kaybolmak istedin kim bilir ?</h2>
         <p className="text-lg mb-8 max-w-2xl">
           Bu koordinatlarda bir sayfa yok. Ana üsse dönüp yeni bir rota çizelim!
@@ -29,6 +41,7 @@ const NotFound = () => {
         >
           Ana Üsse Dön
         </Link>
+
       </div>
     </div>
   );

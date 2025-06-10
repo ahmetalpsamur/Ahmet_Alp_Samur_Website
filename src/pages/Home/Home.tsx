@@ -10,11 +10,10 @@ import backgroundImage from "../../assets/Photo/Background/background-black.jpg"
 import { FaLinkedin, FaGithub, FaInstagram, FaTwitter } from "react-icons/fa";
 import { SiGmail, SiLeetcode } from "react-icons/si";
 
+
 gsap.registerPlugin(TextPlugin);
 
 const Home = () => {
-  const nameRef = useRef(null);
-  const cursorRef = useRef(null);
   const titleRef = useRef(null);
   const [init, setInit] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -33,25 +32,10 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    gsap.to(nameRef.current, {
-      duration: 2,
-      text: "AHMET ALP SAMUR",
-      ease: "power3.out",
-      delay: 0.3,
-    });
-
-    gsap.to(cursorRef.current, {
-      opacity: 0,
-      repeat: -1,
-      yoyo: true,
-      duration: 0.7,
-      delay: 2,
-    });
-
     gsap.fromTo(
       titleRef.current,
       { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 1.2, delay: 2, ease: "power2.out" }
+      { opacity: 1, y: 0, duration: 1.2, delay: 0.5, ease: "power2.out" }
     );
   }, []);
 
@@ -164,34 +148,18 @@ const Home = () => {
       <div className="relative z-10 flex flex-col min-h-screen">
         <Header />
 
-        <div className="flex flex-1 flex-col justify-center items-center px-4 text-center pt-0">
-          <h1
-            ref={nameRef}
-            className="text-6xl md:text-8xl font-extrabold text-white tracking-tight leading-tight select-none"
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              textShadow: "0 0 30px rgba(255,255,255,0.05)",
-            }}
-          ></h1>
-
-          <span
-            ref={cursorRef}
-            className="inline-block w-[6px] h-14 bg-white ml-1"
-            style={{
-              boxShadow: "0 0 10px rgba(255,255,255,0.7)",
-            }}
-          ></span>
-
+        <div className="flex flex-1 flex-col justify-center items-center px-4 text-center pt-20">          
           <p
             ref={titleRef}
-            className="mt-8 text-sm md:text-base tracking-[0.4em] uppercase text-white/60 font-light"
+            className="text-sm md:text-base tracking-[0.4em] uppercase text-white/60 font-light"
           >
             Full-Stack Developer
           </p>
 
           <div className="max-w-xl mt-10">
             <h2 className="text-2xl md:text-3xl font-medium mb-4">
-              <span className="text-white">Merhaba</span>{" "}
+              <span className="font-power text-white">MERHABA</span>{" "}
+              <span className="font-[PowerGrotesk] text-white">MERHABA</span>
               <span className="text-white/50">—</span> <br className="md:hidden" />
               dijital evrenime hoş geldiniz.
             </h2>

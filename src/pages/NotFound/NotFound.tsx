@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 import videoBg from '../../assets/Video/404-video/404_background_cut_delete.mp4';
 import FuzzyText from '../../components/FuzzyText'; // FuzzyText bileşenini import ediyoruz
@@ -41,7 +41,6 @@ const NotFound = () => {
         >
           Ana Üsse Dön
         </Link>
-
       </div>
     </div>
   );

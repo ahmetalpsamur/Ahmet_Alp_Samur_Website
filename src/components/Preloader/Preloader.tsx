@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from '../../components/CountUpProps';
 import logo from "../../assets/Logo/ahmetalpsamur_logo.png";

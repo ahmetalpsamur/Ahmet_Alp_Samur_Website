@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Particles, initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
-import type { Container, Engine } from "@tsparticles/engine";
+import type { Container } from "@tsparticles/engine";
 import Header from "../../components/Header/Header";
 import { gsap } from "gsap";
 import { TextPlugin } from "gsap/TextPlugin";
 import backgroundImage from "../../assets/Photo/Background/background-black.jpg";
 // Social Icons
-import { FaLinkedin, FaGithub, FaInstagram, FaTwitter } from "react-icons/fa";
+import { FaLinkedin, FaGithub, FaInstagram} from "react-icons/fa";
 import { SiGmail, SiLeetcode } from "react-icons/si";
+
+import CircularText from "../../components/CircularText";
 
 
 gsap.registerPlugin(TextPlugin);
@@ -133,7 +135,7 @@ const Home = () => {
 
       {/* Arka plan resmi ve overlay - ORTA KATMAN */}
       <div className="absolute inset-0 z-0">
-        <div 
+        <div
           className="w-full h-full bg-cover bg-center"
           style={{
             backgroundImage: `url(${backgroundImage})`,
@@ -148,7 +150,8 @@ const Home = () => {
       <div className="relative z-10 flex flex-col min-h-screen">
         <Header />
 
-        <div className="flex flex-1 flex-col justify-center items-center px-4 text-center pt-20">          
+        <div className="flex flex-1 flex-col justify-center items-center px-4 text-center pt-20">
+
           <p
             ref={titleRef}
             className="text-sm md:text-base tracking-[0.4em] uppercase text-white/60 font-light"
@@ -240,6 +243,20 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+<div className="fixed right-6 bottom-6 z-20">
+  <div className="w-40 h-40 md:w-48 md:h-48 relative">
+    <CircularText
+      text="CONTACT•CONTACT•CONTACT•"
+      spinDuration={30}
+      onHover="speedUp"
+      radius={70} // Yarıçapı ayarlayabilirsiniz
+      className="text-white"
+    />
+  </div>
+</div>
+
+      
 
       {/* Kopyalama Bildirimi */}
       {copiedText && (

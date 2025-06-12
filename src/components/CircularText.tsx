@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { motion, useAnimation, useMotionValue, MotionValue } from "framer-motion";
+import { motion, useAnimation, useMotionValue } from "framer-motion";
 
 interface CircularTextProps {
   text: string;

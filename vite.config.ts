@@ -12,4 +12,5 @@ export default defineConfig({
     host: true, // veya "0.0.0.0"
     port: 5173,
   },
+  assetsInclude: ['**/*.glb'], // .glb dosyalarını asset olarak işlesin
 })

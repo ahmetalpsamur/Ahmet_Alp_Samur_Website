@@ -30,9 +30,9 @@ uniform vec2 uMouse;
 
 #define PI 3.1415926538
 
-const int u_line_count = 40;
-const float u_line_width = 7.0;
-const float u_line_blur = 10.0;
+const int u_line_count = 30;
+const float u_line_width = 15.0;
+const float u_line_blur = 0.0;
 
 float Perlin2D(vec2 P) {
     vec2 Pi = floor(P);
@@ -61,7 +61,7 @@ float pixel(float count, vec2 resolution) {
 
 float lineFn(vec2 st, float width, float perc, float offset, vec2 mouse, float time, float amplitude, float distance) {
     float split_offset = (perc * 0.4);
-    float split_point = 0.1 + split_offset;
+    float split_point = 2.0 + split_offset;
 
     float amplitude_normal = smoothstep(split_point, 0.7, st.x);
     float amplitude_strength = 0.5;

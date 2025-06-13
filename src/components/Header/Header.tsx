@@ -1,24 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import logo from "../../assets/Logo/ahmetalpsamur_logo.png";
-
-import Threads from '../../components/Header/Thread';
+import { FiPhone } from 'react-icons/fi';
+import Threads from './Thread';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const Header = () => {
+interface HeaderProps {
+  onContactClick?: () => void;
+}
+
+const Header = ({ onContactClick }: HeaderProps) => {
   const headerRef = useRef<HTMLElement>(null);
   const logoRef = useRef<HTMLAnchorElement>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isContactActive, setIsContactActive] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!headerRef.current || !logoRef.current) return;
 
-    // Scroll effect
     gsap.to(headerRef.current, {
       paddingTop: '0.75rem',
       paddingBottom: '0.75rem',
@@ -27,24 +32,19 @@ const Header = () => {
         trigger: document.body,
         start: 'top top',
         end: '+=200',
-        scrub: true
-      }
+        scrub: true,
+      },
     });
 
-    // Logo animation on scroll
     gsap.to(logoRef.current, {
       scale: 0.9,
       scrollTrigger: {
         trigger: document.body,
         start: 'top top',
         end: '+=300',
-        scrub: true
-      }
+        scrub: true,
+      },
     });
-
-    // Close mobile menu when route changes
-    const unlisten = () => setIsMenuOpen(false);
-    return unlisten;
   }, []);
 
   const navItems = [
@@ -55,23 +55,7 @@ const Header = () => {
     { path: "/blog", name: "Blog" }
   ];
 
-  const leftNavItems = navItems.slice(0, 2);
-  const rightNavItems = navItems.slice(2);
-
-  const navItemVariants = {
-    hidden: { opacity: 0, y: -10 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: 0.1 * i,
-        duration: 0.5,
-        ease: "easeOut"
-      }
-    })
-  };
-
-  const mobileMenuVariants = {
+  const menuVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: {
       opacity: 1,
@@ -85,58 +69,65 @@ const Header = () => {
     exit: { opacity: 0, y: -20 }
   };
 
-  const mobileItemVariants = {
+  const itemVariants = {
     hidden: { opacity: 0, x: -20 },
     visible: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -20 }
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/');
+  };
+
+  const handleContactClick = () => {
+    setIsContactActive(prev => !prev);
+    if (onContactClick) onContactClick();
+  };
+
   return (
     <header
       ref={headerRef}
-      className="fixed top-0 w-full z-50 py-4 px-4 sm:px-6 transition-all duration-500 "
+      className="fixed top-0 w-full z-50 py-1 px-4 sm:px-5 transition-all duration-500"
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between relative">
-        {/* Left Navigation - Desktop */}
-        <nav className="hidden md:flex flex-1 justify-end">
-          <div className="flex space-x-6 lg:space-x-8 mr-4 lg:mr-8">
-            {leftNavItems.map(({ path, name }, index) => (
-              <motion.div
-                key={path}
-                custom={index}
-                initial="hidden"
-                animate="visible"
-                variants={navItemVariants}
-              >
-                <Link
-                  to={path}
-                  className={`relative group text-sm uppercase tracking-wider font-medium transition duration-300 
-                    ${location.pathname === path ? 'text-white' : 'text-white/70'} 
-                    hover:text-white`}
-                >
-                  <span className="relative z-10">{name}</span>
-                  <span
-                    className={`absolute left-0 -bottom-1 w-full h-[1px] bg-white transition-all duration-300 
-                      ${location.pathname === path ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} 
-                      origin-left`}
-                  />
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </nav>
+      <div className="max-w-7xl mx-auto flex items-center justify-between h-full">
+
+        {/* Left CONTACT button */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex items-center gap cursor-pointer h-full flex-1 justify-start"
+          onClick={handleContactClick}
+        >
+<motion.div
+  animate={{
+    rotate: isContactActive ? 135 : 0
+  }}
+  transition={{ duration: 0.5, ease: "easeInOut" }}
+  className="p-1 rounded-full"
+>
+  <FiPhone
+    className="text-white text-xl sm:text-3xl transition-all duration-300"
+  />
+</motion.div>
+          <span className='font-[PowerGrotesk] text-1xl sm:text-3xl uppercase tracking-wider'>
+            CONTACT
+          </span>
+        </motion.div>
 
         {/* Logo - Centered */}
         <motion.div
           initial={{ scale: 1.2, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, ease: "backOut" }}
-          className="mx-auto md:mx-4"
+          className="flex items-center justify-center h-full flex-1"
         >
-          <Link
+          <a
             ref={logoRef}
-            to="/"
-            className="flex items-center group"
+            href="#"
+            onClick={handleLogoClick}
+            className="flex items-center group cursor-pointer h-full"
           >
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-white/10 group-hover:bg-white/20 blur-md group-hover:blur-lg transition-all duration-500 opacity-0 group-hover:opacity-100" />
@@ -144,114 +135,71 @@ const Header = () => {
                 <img
                   src={logo}
                   alt="Ahmet Alp Samur Logo"
-                  className="h-20 w-auto transition-transform duration-300 group-hover:scale-105"
+                  className="h-15 md:h-20 w-auto transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
             </div>
-          </Link>
+          </a>
         </motion.div>
 
-        {/* Right Navigation - Desktop */}
-        <nav className="hidden md:flex flex-1 justify-start">
-          <div className="flex space-x-6 lg:space-x-8 ml-4 lg:ml-8">
-            {rightNavItems.map(({ path, name }, index) => (
-              <motion.div
-                key={path}
-                custom={index + leftNavItems.length}
-                initial="hidden"
-                animate="visible"
-                variants={navItemVariants}
-              >
-                <Link
-                  to={path}
-                  className={`relative group text-sm uppercase tracking-wider font-medium transition duration-300 
-                    ${location.pathname === path ? 'text-white' : 'text-white/70'} 
-                    hover:text-white`}
-                >
-                  <span className="relative z-10">{name}</span>
-                  <span
-                    className={`absolute left-0 -bottom-1 w-full h-[1px] bg-white transition-all duration-300 
-                      ${location.pathname === path ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} 
-                      origin-left`}
-                  />
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </nav>
+        {/* Right MENU button */}
+        <div className="flex items-center justify-end h-full flex-1">
+          <button
+            className="text-white focus:outline-none z-50 flex items-center gap-2 h-full"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className="font-[PowerGrotesk] text-1xl sm:text-3xl uppercase tracking-wider">MENU</span>
+            <div className="w-6 flex flex-col items-end space-y-1.5">
+              <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'}`} />
+              <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'w-4'}`} />
+              <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'w-6 -rotate-45 -translate-y-2' : 'w-5'}`} />
+            </div>
+          </button>
+        </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-white focus:outline-none z-50"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <div className="w-6 flex flex-col items-end space-y-1.5">
-            <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'}`}></span>
-            <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'opacity-0' : 'w-4'}`}></span>
-            <span className={`block h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'w-6 -rotate-45 -translate-y-2' : 'w-5'}`}></span>
-          </div>
-        </button>
-
-
-
-        {/* Mobile Menu */}
+        {/* Menu (Mobile & Desktop Shared) */}
         <AnimatePresence>
           {isMenuOpen && (
             <motion.div
-              className="md:hidden fixed inset-0 bg-black/90 backdrop-blur-lg pt-20 px-6 z-40"
+              className="fixed inset-0 bg-black/95 backdrop-blur-lg pt-20 z-40 flex items-center justify-center"
               initial="hidden"
               animate="visible"
               exit="exit"
-              variants={mobileMenuVariants}
+              variants={menuVariants}
             >
-              <motion.ul className="flex flex-col space-y-8">
-                {navItems.map(({ path, name }, index) => (
-                  <motion.li
-                    key={path}
-                    variants={mobileItemVariants}
-                    whileHover={{ x: 5 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                    className="relative" // Ekledim
-                  >
-                    <Link
-                      to={path}
-                      className={`text-5xl font-[PowerGrotesk] font-medium uppercase px-4 py-2 rounded transition-all duration-300
-                    ${location.pathname === path ? 'bg-white text-black' : 'text-white/70'}
-                  `}
-                      onClick={() => setIsMenuOpen(false)}
+              <div className="w-full max-w-2xl">
+                <motion.ul className="flex flex-col items-center space-y-6 px-5">
+                  {navItems.map(({ path, name }, index) => (
+                    <motion.li
+                      key={path}
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                      className="w-full text-center"
                     >
-                      {name}
-                      {/* Metnin hemen yanında indeks */}
-                      <span className="text-xs font-mono ml-1 inline-block align-top -translate-y-0.25">
-                        ({String(index).padStart(2, '0')})
-                      </span>
-                    </Link>
-                  </motion.li>
-                ))}
-                    <Threads
-    amplitude={2}
-    distance={0}
-    enableMouseInteraction={true}
-  />
-              </motion.ul>
-              
-              <motion.div
-                className="absolute bottom-8 left-0 right-0 text-center text-white/50 text-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                
-              >
+                      <Link
+                        to={path}
+                        className={`text-4xl md:text-5xl font-[PowerGrotesk] font-medium uppercase px-5 py-3 rounded-full transition-all duration-300 block
+                          ${location.pathname === path ? 'bg-white text-black' : 'text-white/70 hover:text-white'}
+                        `}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {name}
+                        <span className="text-sm md:text-base font-mono ml-2">({String(index).padStart(2, '0')})</span>
+                      </Link>
+                    </motion.li>
+                  ))}
+                </motion.ul>
 
-                © {new Date().getFullYear()} Ahmet Alp Samur
-              </motion.div>
+                <motion.div className="px-0 w-full" variants={itemVariants}>
+                  <Threads amplitude={1.2} distance={0.4} enableMouseInteraction={true} />
+                </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
-
     </header>
   );
 };

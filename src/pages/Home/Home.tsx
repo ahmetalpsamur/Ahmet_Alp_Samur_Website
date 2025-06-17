@@ -8,12 +8,14 @@ import { SiGmail, SiLeetcode } from "react-icons/si";
 import CircularText from "../../components/CircularText";
 import Header from "../../components/Header/Header";
 import Lanyard from "../../components/Lanyard/Lanyard";
+import ScrollVelocity from "../../components/ScrollVelocity";
 
 gsap.registerPlugin(TextPlugin);
 
 const Home = () => {
   const titleRef = useRef(null);
   const lanyardRef = useRef<HTMLDivElement>(null);
+  const socialButtonsRef = useRef<HTMLDivElement>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [isLanyardVisible, setIsLanyardVisible] = useState(false);
   const [lanyardKey, setLanyardKey] = useState(0);
@@ -28,7 +30,7 @@ const Home = () => {
   }, []);
 
   const toggleLanyard = () => {
-    if (!lanyardRef.current || !overlayRef.current) return;
+    if (!lanyardRef.current || !overlayRef.current || !socialButtonsRef.current) return;
 
     if (isLanyardVisible) {
       // Close animation
@@ -42,6 +44,12 @@ const Home = () => {
         opacity: 0,
         duration: 0.8,
         ease: "power3.inOut",
+      });
+      gsap.to(socialButtonsRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 0.5,
+        ease: "power2.inOut",
         onComplete: () => {
           setIsLanyardVisible(false);
           gsap.set(lanyardRef.current, { y: 0 });
@@ -69,6 +77,18 @@ const Home = () => {
           duration: 0.8,
           delay: 0.3,
           ease: "power3.out"
+        }
+      );
+
+      // Show social buttons
+      gsap.fromTo(socialButtonsRef.current,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          delay: 0.5,
+          ease: "back.out"
         }
       );
     }
@@ -99,6 +119,21 @@ const Home = () => {
       <div className="relative z-10 flex flex-col min-h-screen">
         <Header onContactClick={toggleLanyard} />
         
+{isLanyardVisible && (
+  <div className="fixed top-24 left-0 w-full z-30 flex justify-center">
+    <div
+      className="bg-white px-6 py-2 rounded-md shadow-md"
+      style={{ transform: "rotate(-2deg)" }}
+    >
+      <ScrollVelocity
+        texts={["CONTACT ME *"]}
+        velocity={25}
+       
+        className="font-[PowerGrotesk] text-black tracking-wide"
+      />
+    </div>
+  </div>
+)}
         {/* Fullscreen overlay for Lanyard */}
         <div
           ref={overlayRef}
@@ -121,6 +156,86 @@ const Home = () => {
             gravity={[0, -40, 0]} 
           />
         </div>
+{/* Social Media Buttons - Only visible when Lanyard is visible */}
+<div
+  ref={socialButtonsRef}
+  className={`fixed bottom-6 inset-x-0 z-40 transition-opacity duration-300 ${
+    isLanyardVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+  }`}
+>
+  <div className="w-full py-5 flex justify-center">
+    <div className="flex flex-wrap justify-center gap-2 md:gap-4 px-4">
+      {/* LinkedIn */}
+      <a
+        href="https://www.linkedin.com/in/ahmet-alp-samur/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+        aria-label="LinkedIn"
+      >
+        <FaLinkedin className="text-white text-xl md:text-2xl" />
+        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
+          LinkedIn
+        </span>
+      </a>
+
+      {/* GitHub */}
+      <a
+        href="https://github.com/ahmetalpsamur"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+        aria-label="GitHub"
+      >
+        <FaGithub className="text-white text-xl md:text-2xl" />
+        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
+          GitHub
+        </span>
+      </a>
+
+      {/* Instagram */}
+      <a
+        href="https://www.instagram.com/ahmetalpsamur/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+        aria-label="Instagram"
+      >
+        <FaInstagram className="text-white text-xl md:text-2xl" />
+        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
+          Instagram
+        </span>
+      </a>
+
+      {/* Email */}
+      <button
+        onClick={() => copyToClipboard('ahmetalpsamur@gmail.com')}
+        className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+        aria-label="Email"
+      >
+        <SiGmail className="text-white text-xl md:text-2xl" />
+        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
+          Email
+        </span>
+      </button>
+
+      {/* LeetCode */}
+      <a
+        href="https://leetcode.com/ahmetalpsamur/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+        aria-label="LeetCode"
+      >
+        <SiLeetcode className="text-white text-xl md:text-2xl" />
+        <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
+          LeetCode
+        </span>
+      </a>
+    </div>
+  </div>
+</div>
+
 
         <div 
           className={`flex flex-1 flex-col justify-center items-center px-4 text-center pt-20 transition-opacity duration-300 ${
@@ -144,77 +259,6 @@ const Home = () => {
             <p className="text-white/70 text-base md:text-lg leading-relaxed">
               I create elegant digital experiences with simplicity, aesthetics and technology.
             </p>
-          </div>
-
-          {/* Social Media Buttons */}
-          <div className="mt-12 flex flex-wrap justify-center gap-3 md:gap-4">
-            {/* LinkedIn */}
-            <a
-              href="https://www.linkedin.com/in/ahmet-alp-samur/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              aria-label="LinkedIn"
-            >
-              <FaLinkedin className="text-white text-xl md:text-2xl" />
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
-                LinkedIn
-              </span>
-            </a>
-
-            {/* GitHub */}
-            <a
-              href="https://github.com/ahmetalpsamur"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              aria-label="GitHub"
-            >
-              <FaGithub className="text-white text-xl md:text-2xl" />
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
-                GitHub
-              </span>
-            </a>
-
-            {/* Instagram */}
-            <a
-              href="https://www.instagram.com/ahmetalpsamur/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              aria-label="Instagram"
-            >
-              <FaInstagram className="text-white text-xl md:text-2xl" />
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
-                Instagram
-              </span>
-            </a>
-
-            {/* Email */}
-            <button
-              onClick={() => copyToClipboard('ahmetalpsamur@gmail.com')}
-              className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              aria-label="Email"
-            >
-              <SiGmail className="text-white text-xl md:text-2xl" />
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
-                Email
-              </span>
-            </button>
-
-            {/* LeetCode */}
-            <a
-              href="https://leetcode.com/ahmetalpsamur/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-              aria-label="LeetCode"
-            >
-              <SiLeetcode className="text-white text-xl md:text-2xl" />
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs text-white/70 transition-opacity duration-300">
-                LeetCode
-              </span>
-            </a>
           </div>
         </div>
       </div>

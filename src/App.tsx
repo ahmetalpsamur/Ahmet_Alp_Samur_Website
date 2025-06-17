@@ -20,7 +20,8 @@ function App() {
   if (loading) return <Preloader />;
 
   return (
-    <Router>
+    <div>
+          <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/notfound" element={<NotFound />} />
@@ -28,6 +29,8 @@ function App() {
         <Route path="/projects" element={<Projects />} />
       </Routes>
     </Router>
+    </div>
+
   );
 }
 

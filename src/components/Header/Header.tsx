@@ -100,17 +100,17 @@ const Header = ({ onContactClick }: HeaderProps) => {
           className="flex items-center gap cursor-pointer h-full flex-1 justify-start"
           onClick={handleContactClick}
         >
-<motion.div
-  animate={{
-    rotate: isContactActive ? 135 : 0
-  }}
-  transition={{ duration: 0.5, ease: "easeInOut" }}
-  className="p-1 rounded-full"
->
-  <FiPhone
-    className="text-white text-xl sm:text-3xl transition-all duration-300"
-  />
-</motion.div>
+          <motion.div
+            animate={{
+              rotate: isContactActive ? 0 : 135
+            }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="p-1 rounded-full"
+          >
+            <FiPhone
+              className="text-white text-xl sm:text-3xl transition-all duration-300"
+            />
+          </motion.div>
           <span className='font-[PowerGrotesk] text-1xl sm:text-3xl uppercase tracking-wider'>
             CONTACT
           </span>

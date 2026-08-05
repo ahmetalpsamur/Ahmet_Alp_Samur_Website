@@ -1,766 +1,256 @@
-import { useRef, useEffect } from "react";
-import {
-  Renderer,
-  Camera,
-  Transform,
-  Plane,
-  Mesh,
-  Program,
-  Texture,
-} from "ogl";
-import bornImage from "../assets/Photo/Timeline/1_born.jpg"
-import preSchool from "../assets/Photo/Timeline/2_anaokul.jpg"
-import preSchoolGuitar from "../assets/Photo/Timeline/3_anaokul.jpg"
-import firstSchool from "../assets/Photo/Timeline/4_ilkokul.jpg"
-import computerPhoto from "../assets/Photo/Timeline/5_computer.jpg"
-import kayseriPhoto from "../assets/Photo/Timeline/6_kayseri.jpg"
-import muncubePhoto from "../assets/Photo/Timeline/7_muncube.jpg"
-import firstGuzelbahce from "../assets/Photo/Timeline/8_guzelbahce.jpg";
-import mezun from "../assets/Photo/Timeline/10_mezun.jpg"
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 
-
-
-type GL = Renderer["gl"];
-
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
-  let timeout: number;
-  return function (this: any, ...args: Parameters<T>) {
-    window.clearTimeout(timeout);
-    timeout = window.setTimeout(() => func.apply(this, args), wait);
-  };
-}
-
-function lerp(p1: number, p2: number, t: number): number {
-  return p1 + (p2 - p1) * t;
-}
-
-function autoBind(instance: any): void {
-  const proto = Object.getPrototypeOf(instance);
-  Object.getOwnPropertyNames(proto).forEach((key) => {
-    if (key !== "constructor" && typeof instance[key] === "function") {
-      instance[key] = instance[key].bind(instance);
-    }
-  });
-}
-
-function getFontSize(font: string): number {
-  const match = font.match(/(\d+)px/);
-  return match ? parseInt(match[1], 10) : 30;
-}
-
-function createTextTexture(
-  gl: GL,
-  text: string,
-  font: string = "bold 30px monospace",
-  color: string = "black"
-): { texture: Texture; width: number; height: number } {
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Could not get 2d context");
-
-  context.font = font;
-  const metrics = context.measureText(text);
-  const textWidth = Math.ceil(metrics.width);
-  const fontSize = getFontSize(font);
-  const textHeight = Math.ceil(fontSize * 1.2);
-
-  canvas.width = textWidth + 20;
-  canvas.height = textHeight + 20;
-
-  context.font = font;
-  context.fillStyle = color;
-  context.textBaseline = "middle";
-  context.textAlign = "center";
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  const texture = new Texture(gl, { generateMipmaps: false });
-  texture.image = canvas;
-  return { texture, width: canvas.width, height: canvas.height };
-}
-
-interface TitleProps {
-  gl: GL;
-  plane: Mesh;
-  renderer: Renderer;
-  text: string;
-  textColor?: string;
-  font?: string;
-}
-
-class Title {
-  gl: GL;
-  plane: Mesh;
-  renderer: Renderer;
-  text: string;
-  textColor: string;
-  font: string;
-  mesh!: Mesh;
-
-  constructor({
-    gl,
-    plane,
-    renderer,
-    text,
-    textColor = "#545050",
-    font = "30px sans-serif",
-  }: TitleProps) {
-    autoBind(this);
-    this.gl = gl;
-    this.plane = plane;
-    this.renderer = renderer;
-    this.text = text;
-    this.textColor = textColor;
-    this.font = font;
-    this.createMesh();
-  }
-
-  createMesh() {
-    const { texture, width, height } = createTextTexture(
-      this.gl,
-      this.text,
-      this.font,
-      this.textColor
-    );
-    const geometry = new Plane(this.gl);
-    const program = new Program(this.gl, {
-      vertex: `
-        attribute vec3 position;
-        attribute vec2 uv;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragment: `
-        precision highp float;
-        uniform sampler2D tMap;
-        varying vec2 vUv;
-        void main() {
-          vec4 color = texture2D(tMap, vUv);
-          if (color.a < 0.1) discard;
-          gl_FragColor = color;
-        }
-      `,
-      uniforms: { tMap: { value: texture } },
-      transparent: true,
-    });
-    this.mesh = new Mesh(this.gl, { geometry, program });
-    const aspect = width / height;
-    const textHeightScaled = this.plane.scale.y * 0.15;
-    const textWidthScaled = textHeightScaled * aspect;
-    this.mesh.scale.set(textWidthScaled, textHeightScaled, 1);
-    this.mesh.position.y =
-      -this.plane.scale.y * 0.5 - textHeightScaled * 0.5 - 0.05;
-    this.mesh.setParent(this.plane);
-  }
-}
-
-interface ScreenSize {
-  width: number;
-  height: number;
-}
-
-interface Viewport {
-  width: number;
-  height: number;
-}
-
-interface MediaProps {
-  geometry: Plane;
-  gl: GL;
+export interface TimelineItem {
+  year: string;
+  title: string;
+  description: string;
   image: string;
-  index: number;
-  length: number;
-  renderer: Renderer;
-  scene: Transform;
-  screen: ScreenSize;
-  text: string;
-  viewport: Viewport;
-  bend: number;
-  textColor: string;
-  borderRadius?: number;
-  font?: string;
-}
-
-class Media {
-  extra: number = 0;
-  geometry: Plane;
-  gl: GL;
-  image: string;
-  index: number;
-  length: number;
-  renderer: Renderer;
-  scene: Transform;
-  screen: ScreenSize;
-  text: string;
-  viewport: Viewport;
-  bend: number;
-  textColor: string;
-  borderRadius: number;
-  font?: string;
-  program!: Program;
-  plane!: Mesh;
-  title!: Title;
-  scale!: number;
-  padding!: number;
-  width!: number;
-  widthTotal!: number;
-  x!: number;
-  speed: number = 0;
-  isBefore: boolean = false;
-  isAfter: boolean = false;
-
-  constructor({
-    geometry,
-    gl,
-    image,
-    index,
-    length,
-    renderer,
-    scene,
-    screen,
-    text,
-    viewport,
-    bend,
-    textColor,
-    borderRadius = 0,
-    font,
-  }: MediaProps) {
-    this.geometry = geometry;
-    this.gl = gl;
-    this.image = image;
-    this.index = index;
-    this.length = length;
-    this.renderer = renderer;
-    this.scene = scene;
-    this.screen = screen;
-    this.text = text;
-    this.viewport = viewport;
-    this.bend = bend;
-    this.textColor = textColor;
-    this.borderRadius = borderRadius;
-    this.font = font;
-    this.createShader();
-    this.createMesh();
-    this.createTitle();
-    this.onResize();
-  }
-
-  createShader() {
-    const texture = new Texture(this.gl, { generateMipmaps: false });
-    this.program = new Program(this.gl, {
-      depthTest: false,
-      depthWrite: false,
-      vertex: `
-        precision highp float;
-        attribute vec3 position;
-        attribute vec2 uv;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        uniform float uTime;
-        uniform float uSpeed;
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          vec3 p = position;
-          p.z = (sin(p.x * 4.0 + uTime) * 1.5 + cos(p.y * 2.0 + uTime) * 1.5) * (0.1 + uSpeed * 0.5);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-        }
-      `,
-      fragment: `
-        precision highp float;
-        uniform vec2 uImageSizes;
-        uniform vec2 uPlaneSizes;
-        uniform sampler2D tMap;
-        uniform float uBorderRadius;
-        varying vec2 vUv;
-        
-        float roundedBoxSDF(vec2 p, vec2 b, float r) {
-          vec2 d = abs(p) - b;
-          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-        }
-        
-        void main() {
-          vec2 ratio = vec2(
-            min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
-            min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
-          );
-          vec2 uv = vec2(
-            vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
-            vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
-          );
-          vec4 color = texture2D(tMap, uv);
-          
-          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-          if(d > 0.0) {
-            discard;
-          }
-          
-          gl_FragColor = vec4(color.rgb, 1.0);
-        }
-      `,
-      uniforms: {
-        tMap: { value: texture },
-        uPlaneSizes: { value: [0, 0] },
-        uImageSizes: { value: [0, 0] },
-        uSpeed: { value: 0 },
-        uTime: { value: 100 * Math.random() },
-        uBorderRadius: { value: this.borderRadius },
-      },
-      transparent: true,
-    });
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = this.image;
-    img.onload = () => {
-      texture.image = img;
-      this.program.uniforms.uImageSizes.value = [
-        img.naturalWidth,
-        img.naturalHeight,
-      ];
-    };
-  }
-
-  createMesh() {
-    this.plane = new Mesh(this.gl, {
-      geometry: this.geometry,
-      program: this.program,
-    });
-    this.plane.setParent(this.scene);
-  }
-
-  createTitle() {
-    this.title = new Title({
-      gl: this.gl,
-      plane: this.plane,
-      renderer: this.renderer,
-      text: this.text,
-      textColor: this.textColor,
-      font: this.font,
-    });
-  }
-
-  update(
-    scroll: { current: number; last: number },
-    direction: "right" | "left",
-    //yeni
-    isInfinite: boolean = false // Sonsuz döngü kontrolü için parametre eklendi
-
-  ) {
-    this.plane.position.x = this.x - scroll.current - this.extra;
-
-    const x = this.plane.position.x;
-    const H = this.viewport.width / 2;
-
-    if (this.bend === 0) {
-      this.plane.position.y = 0;
-      this.plane.rotation.z = 0;
-    } else {
-      const B_abs = Math.abs(this.bend);
-      const R = (H * H + B_abs * B_abs) / (2 * B_abs);
-      const effectiveX = Math.min(Math.abs(x), H);
-
-      const arc = R - Math.sqrt(R * R - effectiveX * effectiveX);
-      if (this.bend > 0) {
-        this.plane.position.y = -arc;
-        this.plane.rotation.z = -Math.sign(x) * Math.asin(effectiveX / R);
-      } else {
-        this.plane.position.y = arc;
-        this.plane.rotation.z = Math.sign(x) * Math.asin(effectiveX / R);
-      }
-    }
-
-
-    this.speed = scroll.current - scroll.last;
-    this.program.uniforms.uTime.value += 0.04;
-    this.program.uniforms.uSpeed.value = this.speed;
-
-    const planeOffset = this.plane.scale.x / 2;
-    const viewportOffset = this.viewport.width / 2;
-    this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
-    this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
-    if (direction === "right" && this.isBefore) {
-      this.extra -= this.widthTotal;
-      this.isBefore = this.isAfter = false;
-    }
-    if (direction === "left" && this.isAfter) {
-      this.extra += this.widthTotal;
-      this.isBefore = this.isAfter = false;
-    }
-    //yeni
-    if (isInfinite) { // Sadece infinite modda kaydırma yap
-      if (direction === "right" && this.isBefore) {
-        this.extra -= this.widthTotal;
-        this.isBefore = this.isAfter = false;
-      }
-      if (direction === "left" && this.isAfter) {
-        this.extra += this.widthTotal;
-        this.isBefore = this.isAfter = false;
-      }
-    }
-  }
-
-  onResize({
-    screen,
-    viewport,
-  }: { screen?: ScreenSize; viewport?: Viewport } = {}) {
-    if (screen) this.screen = screen;
-    if (viewport) {
-      this.viewport = viewport;
-      if (this.plane.program.uniforms.uViewportSizes) {
-        this.plane.program.uniforms.uViewportSizes.value = [
-          this.viewport.width,
-          this.viewport.height,
-        ];
-      }
-    }
-    //burası değişebilir
-    this.scale = this.screen.height / 1500;
-    this.plane.scale.y =
-      (this.viewport.height * (900 * this.scale)) / this.screen.height;
-    this.plane.scale.x =
-      (this.viewport.width * (700 * this.scale)) / this.screen.width;
-    this.plane.program.uniforms.uPlaneSizes.value = [
-      this.plane.scale.x,
-      this.plane.scale.y,
-    ];
-    //burası değişebilir
-    this.padding = 7;
-    this.width = this.plane.scale.x + this.padding;
-    this.widthTotal = this.width * this.length;
-    this.x = this.width * this.index;
-  }
-}
-
-interface AppConfig {
-  items?: { image: string; text: string }[];
-  bend?: number;
-  textColor?: string;
-  borderRadius?: number;
-  font?: string;
-  //yeni
-  isInfinite?: boolean;
-}
-
-class App {
-  container: HTMLElement;
-  //yeni
-  isInfinite: boolean = false; // Yeni özellik eklendi
-
-  scroll: {
-    ease: number;
-    current: number;
-    target: number;
-    last: number;
-    position?: number;
-  };
-  onCheckDebounce: (...args: any[]) => void;
-  renderer!: Renderer;
-  gl!: GL;
-  camera!: Camera;
-  scene!: Transform;
-  planeGeometry!: Plane;
-  medias: Media[] = [];
-  mediasImages: { image: string; text: string }[] = [];
-  screen!: { width: number; height: number };
-  viewport!: { width: number; height: number };
-  raf: number = 0;
-
-  boundOnResize!: () => void;
-  boundOnWheel!: (e: WheelEvent) => void;
-  boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
-  boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
-  boundOnTouchUp!: () => void;
-
-  isDown: boolean = false;
-  start: number = 0;
-
-  constructor(
-    container: HTMLElement,
-    {
-      items,
-      bend = 1,
-      textColor = "#ffffff",
-      borderRadius = 0,
-      font = "bold 30px Figtree",
-      isInfinite = false // Yeni parametre eklendi
-
-    }: AppConfig
-  ) {
-    document.documentElement.classList.remove("no-js");
-    this.container = container;
-    this.scroll = { ease: 0.05, current: 0, target: 0, last: 0 };
-    this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
-    this.createRenderer();
-    this.createCamera();
-    this.createScene();
-    this.onResize();
-    this.createGeometry();
-    this.createMedias(items, bend, textColor, borderRadius, font);
-    this.update();
-    this.addEventListeners();
-    //yeni
-    this.isInfinite = isInfinite;
-  }
-
-  createRenderer() {
-    this.renderer = new Renderer({ alpha: true });
-    this.gl = this.renderer.gl;
-    this.gl.clearColor(0, 0, 0, 0);
-    this.container.appendChild(this.renderer.gl.canvas as HTMLCanvasElement);
-  }
-
-  createCamera() {
-    this.camera = new Camera(this.gl);
-    this.camera.fov = 45;
-    this.camera.position.z = 20;
-  }
-
-  createScene() {
-    this.scene = new Transform();
-  }
-
-  createGeometry() {
-    this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 50,
-      widthSegments: 100,
-    });
-  }
-
-  createMedias(
-    items: { image: string; text: string }[] | undefined,
-    bend: number = 1,
-    textColor: string,
-    borderRadius: number,
-    font: string
-  ) {
-    const defaultItems = [
-      {
-        image: `https://picsum.photos/seed/2/800/600?grayscale`,
-        text: "Bridge",
-      },
-
-      {
-        image: mezun,
-        text: "Desk Setup",
-      },
-      {
-        image: firstGuzelbahce,
-        text: "Desk Setup",
-      },
-      {
-        image: muncubePhoto,
-        text: "Desk Setup",
-      },
-      {
-        image: kayseriPhoto,
-        text: "Desk Setup",
-      },
-      {
-        image: firstSchool,
-        text: "Desk Setup",
-      },
-      {
-        image: computerPhoto,
-        text: "Desk Setup",
-      },
-      {
-        image: preSchoolGuitar,
-        text: "Desk Setup",
-      },
-      {
-        image: preSchool,
-        text: "Waterfall",
-      },
-      {
-        image: bornImage,
-        text: "Strawberries",
-      },
-
-    ];
-    const galleryItems = items && items.length ? items : defaultItems;
-    this.mediasImages = galleryItems.concat(galleryItems);
-    this.medias = this.mediasImages.map((data, index) => {
-      return new Media({
-        geometry: this.planeGeometry,
-        gl: this.gl,
-        image: data.image,
-        index,
-        length: this.mediasImages.length,
-        renderer: this.renderer,
-        scene: this.scene,
-        screen: this.screen,
-        text: data.text,
-        viewport: this.viewport,
-        bend,
-        textColor,
-        borderRadius,
-        font,
-      });
-    });
-  }
-
-  onTouchDown(e: MouseEvent | TouchEvent) {
-    this.isDown = true;
-    this.scroll.position = this.scroll.current;
-    this.start = "touches" in e ? e.touches[0].clientX : e.clientX;
-  }
-
-  onTouchMove(e: MouseEvent | TouchEvent) {
-    if (!this.isDown) return;
-    const x = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * 0.05;
-    this.scroll.target = (this.scroll.position ?? 0) + distance;
-  }
-
-  onTouchUp() {
-    this.isDown = false;
-    this.onCheck();
-  }
-
-  //burasi değiş
-  //yeni
-  onWheel(e: WheelEvent) {
-    if (!this.isInfinite) {
-      // Sonsuz değilse ve sınırlara ulaşıldıysa scroll etme
-      const minScroll = 0;
-      const maxScroll = this.medias[0]?.widthTotal ? this.medias[0].widthTotal - this.viewport.width : 0;
-
-      if ((e.deltaY > 0 && this.scroll.target >= maxScroll) ||
-        (e.deltaY < 0 && this.scroll.target <= minScroll)) {
-        return;
-      }
-    }
-
-    this.scroll.target += e.deltaY * 0.05;
-    this.onCheckDebounce();
-  }
-
-
-  onCheck() {
-    if (!this.medias || !this.medias[0]) return;
-    const width = this.medias[0].width;
-    const itemIndex = Math.round(Math.abs(this.scroll.target) / width);
-    const item = width * itemIndex;
-    this.scroll.target = this.scroll.target < 0 ? -item : item;
-  }
-
-  onResize() {
-    this.screen = {
-      width: this.container.clientWidth,
-      height: this.container.clientHeight,
-    };
-    this.renderer.setSize(this.screen.width, this.screen.height);
-    this.camera.perspective({
-      aspect: this.screen.width / this.screen.height,
-    });
-    const fov = (this.camera.fov * Math.PI) / 180;
-    const height = 2 * Math.tan(fov / 2) * this.camera.position.z;
-    const width = height * this.camera.aspect;
-    this.viewport = { width, height };
-    if (this.medias) {
-      this.medias.forEach((media) =>
-        media.onResize({ screen: this.screen, viewport: this.viewport })
-      );
-    }
-  }
-
-  update() {
-    this.scroll.current = lerp(
-      this.scroll.current,
-      this.scroll.target,
-      this.scroll.ease
-    );
-    const direction = this.scroll.current > this.scroll.last ? "right" : "left";
-    if (this.medias) {
-      this.medias.forEach((media) => media.update(this.scroll, direction));
-    }
-    this.renderer.render({ scene: this.scene, camera: this.camera });
-    this.scroll.last = this.scroll.current;
-    this.raf = window.requestAnimationFrame(this.update.bind(this));
-  }
-
-  addEventListeners() {
-    this.boundOnResize = this.onResize.bind(this);
-    this.boundOnWheel = this.onWheel.bind(this);
-    this.boundOnTouchDown = this.onTouchDown.bind(this);
-    this.boundOnTouchMove = this.onTouchMove.bind(this);
-    this.boundOnTouchUp = this.onTouchUp.bind(this);
-    window.addEventListener("resize", this.boundOnResize);
-    this.boundOnWheel = (e: WheelEvent) => this.onWheel(e);
-    window.addEventListener("wheel", this.boundOnWheel);
-    window.addEventListener("mousedown", this.boundOnTouchDown);
-    window.addEventListener("mousemove", this.boundOnTouchMove);
-    window.addEventListener("mouseup", this.boundOnTouchUp);
-    window.addEventListener("touchstart", this.boundOnTouchDown);
-    window.addEventListener("touchmove", this.boundOnTouchMove);
-    window.addEventListener("touchend", this.boundOnTouchUp);
-  }
-
-  destroy() {
-    window.cancelAnimationFrame(this.raf);
-    window.removeEventListener("resize", this.boundOnResize);
-    this.boundOnWheel = (e: WheelEvent) => this.onWheel(e);
-    window.removeEventListener("wheel", this.boundOnWheel);
-    window.removeEventListener("mousedown", this.boundOnTouchDown);
-    window.removeEventListener("mousemove", this.boundOnTouchMove);
-    window.removeEventListener("mouseup", this.boundOnTouchUp);
-    window.removeEventListener("touchstart", this.boundOnTouchDown);
-    window.removeEventListener("touchmove", this.boundOnTouchMove);
-    window.removeEventListener("touchend", this.boundOnTouchUp);
-    if (
-      this.renderer &&
-      this.renderer.gl &&
-      this.renderer.gl.canvas.parentNode
-    ) {
-      this.renderer.gl.canvas.parentNode.removeChild(
-        this.renderer.gl.canvas as HTMLCanvasElement
-      );
-    }
-  }
 }
 
 interface CircularGalleryProps {
-  items?: { image: string; text: string }[];
-  bend?: number;
-  textColor?: string;
-  borderRadius?: number;
-  font?: string;
-  //yeni
-  isInfinite?: boolean; // Yeni prop eklendi
+  items: TimelineItem[];
 }
 
-export default function CircularGallery({
-  items,
-  bend = 3,
-  textColor = "#ffffff",
-  borderRadius = 0.05,
-  font = "bold 30px Figtree",
-  //yeni
-  isInfinite = false // Varsayılan olarak false
-}: CircularGalleryProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+const CircularGallery = ({ items }: CircularGalleryProps) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const wheelLockedRef = useRef(false);
+  const dragStartRef = useRef<number | null>(null);
+
+  const goTo = (nextIndex: number) => {
+    if (!items.length) return;
+
+    const boundedIndex = Math.min(Math.max(nextIndex, 0), items.length - 1);
+    if (boundedIndex === activeIndex) return;
+
+    setDirection(boundedIndex > activeIndex ? 1 : -1);
+    setActiveIndex(boundedIndex);
+  };
+
+  const goPrevious = () => goTo(activeIndex - 1);
+  const goNext = () => goTo(activeIndex + 1);
+
   useEffect(() => {
-    if (!containerRef.current) return;
-    const app = new App(containerRef.current, {
-      items,
-      bend,
-      textColor,
-      borderRadius,
-      font,
-      isInfinite
-    });
-    return () => {
-      app.destroy();
-    };
-  }, [items, bend, textColor, borderRadius, font]);
-  return <div
-    className="w-full h-full py-0 overflow-hidden cursor-grab active:cursor-grabbing"
-    ref={containerRef}
+    if (activeIndex > items.length - 1) {
+      setActiveIndex(Math.max(items.length - 1, 0));
+    }
+  }, [activeIndex, items.length]);
 
-  />;
-}
+  if (!items.length) return null;
+
+  const activeItem = items[activeIndex];
+  const progress = items.length > 1
+    ? (activeIndex / (items.length - 1)) * 100
+    : 100;
+
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (wheelLockedRef.current || Math.abs(event.deltaY) < 8) return;
+
+    wheelLockedRef.current = true;
+    if (event.deltaY > 0) {
+      goNext();
+    } else {
+      goPrevious();
+    }
+    window.setTimeout(() => {
+      wheelLockedRef.current = false;
+    }, 550);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    dragStartRef.current = event.clientX;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current === null) return;
+
+    const distance = dragStartRef.current - event.clientX;
+    if (Math.abs(distance) > 45) {
+      if (distance > 0) {
+        goNext();
+      } else {
+        goPrevious();
+      }
+    }
+    dragStartRef.current = null;
+  };
+
+  return (
+    <section
+      aria-label="Life timeline"
+      aria-roledescription="carousel"
+      tabIndex={0}
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={() => {
+        dragStartRef.current = null;
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft") goPrevious();
+        if (event.key === "ArrowRight") goNext();
+      }}
+      className="relative h-full w-full touch-pan-y select-none overflow-hidden outline-none"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.07),transparent_42%)]"
+      />
+
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={activeItem.year}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.45 }}
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 font-[PowerGrotesk] text-[clamp(7rem,23vw,20rem)] leading-none tracking-[-0.08em] text-white/[0.035]"
+        >
+          {activeItem.year}
+        </motion.span>
+      </AnimatePresence>
+
+      <div className="absolute inset-x-4 top-2 z-20 flex items-center justify-between sm:inset-x-6 lg:inset-x-10">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-white/40">
+            About · Life in frames
+          </p>
+          <p className="mt-1 hidden text-xs text-white/55 sm:block">
+            Scroll or drag to move through the years
+          </p>
+        </div>
+        <span className="font-mono text-[10px] tracking-[0.2em] text-white/45">
+          {String(activeIndex + 1).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
+        </span>
+      </div>
+
+      <div className="relative z-10 mx-auto grid h-full w-full max-w-6xl items-center gap-4 px-4 pb-20 pt-10 sm:px-8 md:grid-cols-[1.1fr_0.9fr] md:gap-10 md:pb-24 md:pt-14 lg:gap-16">
+        <div className="relative mx-auto h-[min(32dvh,350px)] w-full max-w-xl sm:h-[min(38dvh,410px)] md:h-[min(55dvh,540px)]">
+          <div className="absolute -inset-2 rotate-2 border border-white/10" />
+
+          <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+            <motion.figure
+              key={`${activeItem.year}-${activeIndex}`}
+              custom={direction}
+              variants={{
+                enter: (moveDirection: number) => ({
+                  opacity: 0,
+                  x: moveDirection * 70,
+                  rotate: moveDirection * 2,
+                }),
+                center: { opacity: 1, x: 0, rotate: 0 },
+                exit: (moveDirection: number) => ({
+                  opacity: 0,
+                  x: moveDirection * -70,
+                  rotate: moveDirection * -2,
+                }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 overflow-hidden bg-neutral-900"
+            >
+              <img
+                src={activeItem.image}
+                alt={activeItem.title}
+                draggable={false}
+                className="h-full w-full object-cover grayscale-[20%] transition duration-700 hover:grayscale-0"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
+              <figcaption className="absolute bottom-3 left-3 font-mono text-[9px] uppercase tracking-[0.2em] text-white/70">
+                Memory {String(activeIndex + 1).padStart(2, "0")}
+              </figcaption>
+            </motion.figure>
+          </AnimatePresence>
+        </div>
+
+        <div className="relative text-left md:pr-6">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${activeItem.year}-${activeItem.title}`}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="mb-2 flex items-center gap-3 sm:mb-4">
+                <span className="font-mono text-xs tracking-[0.28em] text-white/45">
+                  {activeItem.year}
+                </span>
+                <span className="h-px w-12 bg-white/25" />
+              </div>
+              <h1 className="font-[PowerGrotesk] text-3xl uppercase leading-[0.95] tracking-[-0.03em] text-white sm:text-5xl md:text-6xl">
+                {activeItem.title}
+              </h1>
+              <p className="mt-3 max-w-md text-xs leading-relaxed text-white/60 sm:mt-5 sm:text-sm md:text-base">
+                {activeItem.description}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="absolute inset-x-4 bottom-4 z-20 sm:inset-x-6 sm:bottom-6 lg:inset-x-10">
+        <div className="mb-3 h-px w-full bg-white/10">
+          <motion.div
+            className="h-full bg-white"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center justify-between">
+            {items.map((item, index) => (
+              <button
+                key={`${item.year}-${index}`}
+                type="button"
+                onClick={() => goTo(index)}
+                aria-label={`Go to ${item.year}: ${item.title}`}
+                aria-current={index === activeIndex ? "step" : undefined}
+                className={`font-mono text-[8px] transition-colors sm:text-[9px] md:text-[10px] ${
+                  index === activeIndex ? "text-white" : "text-white/30 hover:text-white/70"
+                }`}
+              >
+                <span className="hidden sm:inline">{item.year}</span>
+                <span
+                  className={`block h-1.5 w-1.5 rounded-full sm:hidden ${
+                    index === activeIndex ? "bg-white" : "bg-white/25"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+
+          <div className="ml-3 flex gap-2 border-l border-white/15 pl-3">
+            <button
+              type="button"
+              onClick={goPrevious}
+              disabled={activeIndex === 0}
+              aria-label="Previous memory"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/20 transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white sm:h-9 sm:w-9"
+            >
+              <FiArrowLeft />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={activeIndex === items.length - 1}
+              aria-label="Next memory"
+              className="grid h-8 w-8 place-items-center rounded-full border border-white/20 transition-colors hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white sm:h-9 sm:w-9"
+            >
+              <FiArrowRight />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default CircularGallery;

@@ -10,6 +10,11 @@ interface FallingTextProps {
   gravity?: number;
   mouseConstraintStiffness?: number;
   fontSize?: string;
+  fontFamily?: string;
+  fontWeight?: string | number;
+  fontStyle?: string;
+  textColor?: string;
+  highlightColor?: string;
 }
 
 const FallingText: React.FC<FallingTextProps> = ({
@@ -21,6 +26,11 @@ const FallingText: React.FC<FallingTextProps> = ({
   gravity = 1,
   mouseConstraintStiffness = 0.2,
   fontSize = "1rem",
+  fontFamily = "inherit",
+  fontWeight = "normal",
+  fontStyle = "normal",
+  textColor = "inherit",
+  highlightColor = "#06b6d4",
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
@@ -36,9 +46,8 @@ const FallingText: React.FC<FallingTextProps> = ({
       .map((word) => {
         const isHighlighted = highlightWords.some((hw) => word.startsWith(hw));
         return `<span
-          class="inline-block mx-[2px] select-none ${
-            isHighlighted ? "text-cyan-500 font-bold" : ""
-          }"
+          class="inline-block mx-[2px] select-none"
+          style="color: ${isHighlighted ? highlightColor : textColor}; font-weight: ${isHighlighted ? "bold" : fontWeight}; font-style: ${fontStyle}; font-family: ${fontFamily}"
         >
           ${word}
         </span>`;
@@ -46,7 +55,7 @@ const FallingText: React.FC<FallingTextProps> = ({
       .join(" ");
 
     textRef.current.innerHTML = newHTML;
-  }, [text, highlightWords]);
+  }, [text, highlightWords, fontFamily, fontWeight, fontStyle, textColor, highlightColor]);
 
   useEffect(() => {
     if (trigger === "auto") {
@@ -225,7 +234,9 @@ const FallingText: React.FC<FallingTextProps> = ({
     <div
       ref={containerRef}
       className="relative z-[1] w-full h-full cursor-pointer text-center pt-8 overflow-hidden"
+      onClick={trigger === "click" ? handleTrigger : undefined}
       onMouseEnter={trigger === "hover" ? handleTrigger : undefined}
+      style={{ fontFamily, fontSize, fontWeight, fontStyle, color: textColor }}
     >
       <div
         ref={textRef}

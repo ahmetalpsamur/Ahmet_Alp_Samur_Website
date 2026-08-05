@@ -150,6 +150,7 @@ const Footer = () => {
                 trigger={fallingStarted ? "auto" : "click"}
                 gravity={0.3}
                 fontSize="1.5rem"
+                fontFamily="'PowerGrotesk"
               />
             </div>
 

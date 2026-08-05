@@ -8,6 +8,17 @@ import {
   Program,
   Texture,
 } from "ogl";
+import bornImage from "../assets/Photo/Timeline/1_born.jpg"
+import preSchool from "../assets/Photo/Timeline/2_anaokul.jpg"
+import preSchoolGuitar from "../assets/Photo/Timeline/3_anaokul.jpg"
+import firstSchool from "../assets/Photo/Timeline/4_ilkokul.jpg"
+import computerPhoto from "../assets/Photo/Timeline/5_computer.jpg"
+import kayseriPhoto from "../assets/Photo/Timeline/6_kayseri.jpg"
+import muncubePhoto from "../assets/Photo/Timeline/7_muncube.jpg"
+import firstGuzelbahce from "../assets/Photo/Timeline/8_guzelbahce.jpg";
+import mezun from "../assets/Photo/Timeline/10_mezun.jpg"
+
+
 
 type GL = Renderer["gl"];
 
@@ -335,7 +346,10 @@ class Media {
 
   update(
     scroll: { current: number; last: number },
-    direction: "right" | "left"
+    direction: "right" | "left",
+    //yeni
+    isInfinite: boolean = false // Sonsuz döngü kontrolü için parametre eklendi
+
   ) {
     this.plane.position.x = this.x - scroll.current - this.extra;
 
@@ -360,7 +374,7 @@ class Media {
       }
     }
 
-  
+
     this.speed = scroll.current - scroll.last;
     this.program.uniforms.uTime.value += 0.04;
     this.program.uniforms.uSpeed.value = this.speed;
@@ -376,6 +390,17 @@ class Media {
     if (direction === "left" && this.isAfter) {
       this.extra += this.widthTotal;
       this.isBefore = this.isAfter = false;
+    }
+    //yeni
+    if (isInfinite) { // Sadece infinite modda kaydırma yap
+      if (direction === "right" && this.isBefore) {
+        this.extra -= this.widthTotal;
+        this.isBefore = this.isAfter = false;
+      }
+      if (direction === "left" && this.isAfter) {
+        this.extra += this.widthTotal;
+        this.isBefore = this.isAfter = false;
+      }
     }
   }
 
@@ -417,10 +442,15 @@ interface AppConfig {
   textColor?: string;
   borderRadius?: number;
   font?: string;
+  //yeni
+  isInfinite?: boolean;
 }
 
 class App {
   container: HTMLElement;
+  //yeni
+  isInfinite: boolean = false; // Yeni özellik eklendi
+
   scroll: {
     ease: number;
     current: number;
@@ -441,7 +471,7 @@ class App {
   raf: number = 0;
 
   boundOnResize!: () => void;
- boundOnWheel!: (e: WheelEvent) => void;
+  boundOnWheel!: (e: WheelEvent) => void;
   boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchUp!: () => void;
@@ -457,6 +487,8 @@ class App {
       textColor = "#ffffff",
       borderRadius = 0,
       font = "bold 30px Figtree",
+      isInfinite = false // Yeni parametre eklendi
+
     }: AppConfig
   ) {
     document.documentElement.classList.remove("no-js");
@@ -471,6 +503,8 @@ class App {
     this.createMedias(items, bend, textColor, borderRadius, font);
     this.update();
     this.addEventListeners();
+    //yeni
+    this.isInfinite = isInfinite;
   }
 
   createRenderer() {
@@ -506,53 +540,47 @@ class App {
   ) {
     const defaultItems = [
       {
-        image: `https://picsum.photos/seed/1/800/600?grayscale`,
+        image: `https://picsum.photos/seed/2/800/600?grayscale`,
         text: "Bridge",
       },
+
       {
-        image: `https://picsum.photos/seed/2/800/600?grayscale`,
+        image: mezun,
         text: "Desk Setup",
       },
       {
-        image: `https://picsum.photos/seed/3/800/600?grayscale`,
+        image: firstGuzelbahce,
+        text: "Desk Setup",
+      },
+      {
+        image: muncubePhoto,
+        text: "Desk Setup",
+      },
+      {
+        image: kayseriPhoto,
+        text: "Desk Setup",
+      },
+      {
+        image: firstSchool,
+        text: "Desk Setup",
+      },
+      {
+        image: computerPhoto,
+        text: "Desk Setup",
+      },
+      {
+        image: preSchoolGuitar,
+        text: "Desk Setup",
+      },
+      {
+        image: preSchool,
         text: "Waterfall",
       },
       {
-        image: `https://picsum.photos/seed/4/800/600?grayscale`,
+        image: bornImage,
         text: "Strawberries",
       },
-      {
-        image: `https://picsum.photos/seed/5/800/600?grayscale`,
-        text: "Deep Diving",
-      },
-      {
-        image: `https://picsum.photos/seed/16/800/600?grayscale`,
-        text: "Train Track",
-      },
-      {
-        image: `https://picsum.photos/seed/17/800/600?grayscale`,
-        text: "Santorini",
-      },
-      {
-        image: `https://picsum.photos/seed/8/800/600?grayscale`,
-        text: "Blurry Lights",
-      },
-      {
-        image: `https://picsum.photos/seed/9/800/600?grayscale`,
-        text: "New York",
-      },
-      {
-        image: `https://picsum.photos/seed/10/800/600?grayscale`,
-        text: "Good Boy",
-      },
-      {
-        image: `https://picsum.photos/seed/21/800/600?grayscale`,
-        text: "Coastline",
-      },
-      {
-        image: `https://picsum.photos/seed/12/800/600?grayscale`,
-        text: "Palm Trees",
-      },
+
     ];
     const galleryItems = items && items.length ? items : defaultItems;
     this.mediasImages = galleryItems.concat(galleryItems);
@@ -595,13 +623,22 @@ class App {
   }
 
   //burasi değiş
-onWheel(e: WheelEvent) {
-  // Use the deltaY value to determine scroll direction
-  // Negative deltaY means scrolling up, positive means scrolling down
-  this.scroll.target += e.deltaY > 0 ? 0.7 : -0.7;
-  this.onCheckDebounce();
-  
-}
+  //yeni
+  onWheel(e: WheelEvent) {
+    if (!this.isInfinite) {
+      // Sonsuz değilse ve sınırlara ulaşıldıysa scroll etme
+      const minScroll = 0;
+      const maxScroll = this.medias[0]?.widthTotal ? this.medias[0].widthTotal - this.viewport.width : 0;
+
+      if ((e.deltaY > 0 && this.scroll.target >= maxScroll) ||
+        (e.deltaY < 0 && this.scroll.target <= minScroll)) {
+        return;
+      }
+    }
+
+    this.scroll.target += e.deltaY * 0.05;
+    this.onCheckDebounce();
+  }
 
 
   onCheck() {
@@ -693,6 +730,8 @@ interface CircularGalleryProps {
   textColor?: string;
   borderRadius?: number;
   font?: string;
+  //yeni
+  isInfinite?: boolean; // Yeni prop eklendi
 }
 
 export default function CircularGallery({
@@ -701,6 +740,8 @@ export default function CircularGallery({
   textColor = "#ffffff",
   borderRadius = 0.05,
   font = "bold 30px Figtree",
+  //yeni
+  isInfinite = false // Varsayılan olarak false
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -711,6 +752,7 @@ export default function CircularGallery({
       textColor,
       borderRadius,
       font,
+      isInfinite
     });
     return () => {
       app.destroy();
@@ -719,5 +761,6 @@ export default function CircularGallery({
   return <div
     className="w-full h-full py-0 overflow-hidden cursor-grab active:cursor-grabbing"
     ref={containerRef}
+
   />;
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, type ReactNode } from 'react';
 import Matter from 'matter-js';
-import { Engine, Render, World, Bodies, Mouse, MouseConstraint, Body, type IChamfer, type IBodyDefinition } from 'matter-js';
+import { Engine, Render, World, Bodies, Mouse, MouseConstraint, Body, type IBodyDefinition } from 'matter-js';
 
 interface FallingElementsProps {
   children: ReactNode;

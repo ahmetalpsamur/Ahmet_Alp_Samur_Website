@@ -16,7 +16,6 @@ const ContactModal = ({ isVisible, onClose, onCopy, copiedText }: ContactModalPr
   const lanyardRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const socialButtonsRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!lanyardRef.current || !overlayRef.current || !socialButtonsRef.current) return;

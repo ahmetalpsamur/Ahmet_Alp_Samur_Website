@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { FiArrowUpRight, FiMail, FiPhone } from "react-icons/fi";
+import { FiArrowUpRight, FiPhone, FiRefreshCw } from "react-icons/fi";
 
 import logo from "../../assets/Logo/ahmetalpsamur_logo.png";
 import Threads from "./Thread";
+import GravityMenu from "./GravityMenu";
+import gravgunInset from "../../assets/Photo/Half-life/gravgun-inset.png";
+import gravgunHover from "../../assets/Photo/Half-life/gravgun-hover.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -56,20 +59,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-const socialLinks = [
-  { name: "LinkedIn", href: "https://www.linkedin.com/in/ahmet-alp-samur/" },
-  { name: "GitHub", href: "https://github.com/ahmetalpsamur" },
-  { name: "Instagram", href: "https://www.instagram.com/ahmetalpsamur/" },
-];
-
-const getIstanbulTime = () =>
-  new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Istanbul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date());
-
 const Header = ({
   isContactActive = false,
   onContactClick,
@@ -77,6 +66,10 @@ const Header = ({
   const headerRef = useRef<HTMLElement>(null);
   const logoRef = useRef<HTMLAnchorElement>(null);
   const logoTimerRef = useRef<number | null>(null);
+  const headerRowRef = useRef<HTMLDivElement>(null);
+  const menuBodyRef = useRef<HTMLDivElement>(null);
+  // Stable identity: a fresh array each render would rebuild the physics world.
+  const gravityRoots = useMemo(() => [headerRowRef, menuBodyRef], []);
   const location = useLocation();
   const navigate = useNavigate();
   const currentIndex = Math.max(
@@ -86,7 +79,9 @@ const Header = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLogoTransitioning, setIsLogoTransitioning] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(currentIndex);
-  const [istanbulTime, setIstanbulTime] = useState(getIstanbulTime);
+  const [isGravityMode, setIsGravityMode] = useState(false);
+  const [gravityResetSignal, setGravityResetSignal] = useState(0);
+  const [isGravityResetting, setIsGravityResetting] = useState(false);
 
   useEffect(() => {
     if (!headerRef.current || !logoRef.current) return;
@@ -122,19 +117,23 @@ const Header = ({
   }, []);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setIstanbulTime(getIstanbulTime());
-    }, 30_000);
-
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) {
+      setIsGravityMode(false);
+      setIsGravityResetting(false);
+      return;
+    }
 
     const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMenuOpen(false);
+      if (event.key !== "Escape") return;
+
+      if (isGravityMode) {
+        setIsGravityResetting(false);
+        setIsGravityMode(false);
+        return;
+      }
+
+      setIsMenuOpen(false);
     };
 
     document.body.style.overflow = "hidden";
@@ -144,7 +143,7 @@ const Header = ({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [isMenuOpen]);
+  }, [isGravityMode, isMenuOpen]);
 
   useEffect(
     () => () => {
@@ -202,9 +201,13 @@ const Header = ({
         )}
       </AnimatePresence>
 
-      <div className="relative z-50 mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center">
+      <div
+        ref={headerRowRef}
+        className="relative z-50 mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center"
+      >
         <motion.button
           type="button"
+          data-gravity
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -288,6 +291,7 @@ const Header = ({
         </motion.button>
 
         <motion.div
+          data-gravity
           initial={{ scale: 1.2, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, ease: "backOut" }}
@@ -344,6 +348,7 @@ const Header = ({
 
         <motion.button
           type="button"
+          data-gravity
           whileTap={{ scale: 0.96 }}
           className={`relative z-50 flex items-center justify-self-end gap-2 rounded-full border px-2 py-1 transition-[background-color,border-color,color,box-shadow] duration-500 focus:outline-none sm:px-3 sm:py-1.5 ${
             isMenuOpen
@@ -394,18 +399,21 @@ const Header = ({
               <Threads amplitude={1.1} distance={0.35} enableMouseInteraction />
             </div>
 
-            <div className="relative z-10 mx-auto grid h-full max-w-7xl grid-rows-[1fr_auto] px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:pt-24 lg:px-8">
+            <div
+              ref={menuBodyRef}
+              className="relative z-10 mx-auto grid h-full max-w-7xl grid-rows-[1fr] px-4 pb-4 pt-20 sm:px-6 sm:pb-6 md:pt-24 lg:px-8"
+            >
               <div className="flex min-h-0 items-start justify-center pt-2 md:pt-3">
                 <nav
                   aria-label="Primary navigation"
                   onMouseLeave={() => setPreviewIndex(currentIndex)}
                   className="relative max-h-full min-h-0 w-full max-w-4xl overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                  <div className="mb-3 flex items-center justify-between border-b border-white/15 pb-2 font-mono text-[8px] uppercase tracking-[0.22em] text-white/35 md:hidden">
+                  <div data-gravity className="mb-3 flex items-center justify-between border-b border-white/15 pb-2 font-mono text-[8px] uppercase tracking-[0.22em] text-white/35 md:hidden">
                     <span>Navigation</span>
                     <span>{String(previewIndex).padStart(2, "0")} · {String(navItems.length).padStart(2, "0")}</span>
                   </div>
-                  <div className="mb-3 hidden items-center justify-between border-b border-white/15 pb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-white/35 md:flex">
+                  <div data-gravity className="mb-3 hidden items-center justify-between border-b border-white/15 pb-2 font-mono text-[9px] uppercase tracking-[0.22em] text-white/35 md:flex">
                     <span>Navigation</span>
                     <span>{String(previewIndex).padStart(2, "0")} / {String(navItems.length).padStart(2, "0")}</span>
                   </div>
@@ -473,6 +481,7 @@ const Header = ({
                       return (
                         <motion.li
                           key={item.name}
+                          data-gravity
                           variants={{
                             hidden: { opacity: 0, x: -28 },
                             visible: { opacity: 1, x: 0 },
@@ -513,37 +522,99 @@ const Header = ({
 
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.4 }}
-                className="relative z-20 flex items-end justify-between border-t border-white/15 pt-3 font-mono text-[8px] uppercase tracking-[0.16em] text-white/40 sm:text-[9px]"
-              >
-                <div className="flex items-center gap-3 sm:gap-5">
-                  <span>Istanbul · {istanbulTime}</span>
-                  <a
-                    href="mailto:ahmetalpsamur@gmail.com"
-                    className="hidden items-center gap-1.5 transition-colors hover:text-white sm:flex"
-                  >
-                    <FiMail />
-                    Email me
-                  </a>
-                </div>
-                <div className="flex gap-3 sm:gap-5">
-                  {socialLinks.map((social) => (
-                    <a
-                      key={social.name}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition-colors hover:text-white"
-                    >
-                      {social.name}
-                    </a>
-                  ))}
-                </div>
-              </motion.div>
             </div>
+
+            <AnimatePresence>
+              {isGravityMode && (
+                <GravityMenu
+                  roots={gravityRoots}
+                  resetSignal={gravityResetSignal}
+                  onResettingChange={setIsGravityResetting}
+                />
+              )}
+            </AnimatePresence>
+
+            <div className="absolute bottom-16 left-4 z-[35] sm:bottom-20 sm:left-6 lg:left-8">
+              <div className="relative h-11 w-[4.5rem]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsGravityResetting(false);
+                  setIsGravityMode((isOn) => !isOn);
+                }}
+                aria-pressed={isGravityMode}
+                aria-label={
+                  isGravityMode ? "Holster gravity gun" : "Equip gravity gun"
+                }
+                title={isGravityMode ? "Holster gravity gun" : "Equip gravity gun"}
+                className={`group relative flex h-11 w-[4.5rem] items-center justify-center overflow-hidden rounded-md border transition-[border-color,background-color,box-shadow] duration-300 ${
+                  isGravityMode
+                    ? "border-amber-400/60 bg-amber-400/[0.07] shadow-[0_0_24px_rgba(255,150,40,0.28)]"
+                    : "border-white/15 hover:border-white/40"
+                }`}
+              >
+                <img
+                  src={gravgunInset}
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute w-14 object-contain transition-opacity duration-300 ${
+                    isGravityMode ? "opacity-0" : "opacity-40 group-hover:opacity-0"
+                  }`}
+                />
+                <img
+                  src={gravgunHover}
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute w-14 object-contain transition-opacity duration-300 ${
+                    isGravityMode
+                      ? "opacity-100 drop-shadow-[0_0_10px_rgba(255,150,40,0.75)]"
+                      : "opacity-0 group-hover:opacity-100"
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isGravityMode && (
+                  <motion.button
+                    type="button"
+                    initial={{ opacity: 0, x: -8, scale: 0.9 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -8, scale: 0.9 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onClick={() =>
+                      setGravityResetSignal((signal) => signal + 1)
+                    }
+                    disabled={isGravityResetting}
+                    aria-label="Reset gravity scene"
+                    className="absolute left-[calc(100%+0.5rem)] top-1/2 flex h-9 w-24 -translate-y-1/2 items-center justify-center gap-2 rounded-md border border-amber-300/25 bg-black/70 font-mono text-[8px] uppercase tracking-[0.16em] text-amber-100/60 shadow-[0_0_18px_rgba(255,145,40,0.1)] backdrop-blur-md transition-colors hover:border-amber-300/55 hover:text-amber-50 disabled:cursor-wait disabled:opacity-45"
+                  >
+                    <FiRefreshCw
+                      className={isGravityResetting ? "animate-spin" : ""}
+                    />
+                    <span>{isGravityResetting ? "Resetting" : "Reset"}</span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isGravityMode && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.25, delay: 0.08 }}
+                  className="pointer-events-none absolute bottom-5 left-1/2 z-[35] hidden -translate-x-1/2 items-center gap-2 rounded-full border border-amber-200/10 bg-black/55 px-4 py-2 font-mono text-[8px] uppercase tracking-[0.16em] text-amber-100/35 backdrop-blur-md sm:flex"
+                >
+                  <span>Drag to throw</span>
+                  <span className="text-amber-300/25">/</span>
+                  <span>Right click to punt</span>
+                  <span className="text-amber-300/25">/</span>
+                  <span>Esc to exit</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

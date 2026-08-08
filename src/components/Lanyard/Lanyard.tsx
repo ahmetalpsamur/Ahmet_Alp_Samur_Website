@@ -21,7 +21,7 @@ import { MeshLineGeometry, MeshLineMaterial } from "meshline";
 import * as THREE from "three";
 
 // replace with your own imports, see the usage snippet for details
-import cardGLB from "./ahmet_cardv2.glb";
+import cardGLB from "./ahmet_cardv3.glb";
 import lanyard from "./ahmet_band.jpg";
 
 extend({ MeshLineGeometry, MeshLineMaterial });
@@ -31,6 +31,12 @@ interface LanyardProps {
   gravity?: [number, number, number];
   fov?: number;
   transparent?: boolean;
+  onCardScreenPosition?: (point: ScreenPoint) => void;
+}
+
+export interface ScreenPoint {
+  x: number;
+  y: number;
 }
 
 export default function Lanyard({
@@ -38,19 +44,25 @@ export default function Lanyard({
   gravity = [0, -40, 0],
   fov = 15,
   transparent = true,
+  onCardScreenPosition,
 }: LanyardProps) {
   return (
-    <div className="relative z-0 w-full h-screen flex justify-center items-center transform scale-100 origin-center">
+    <div
+      className="relative z-0 flex h-screen w-full origin-center scale-100 transform items-center justify-center"
+      style={{ touchAction: "none" }}
+    >
       <Canvas
         camera={{ position, fov }}
         gl={{ alpha: transparent }}
-        onCreated={({ gl }) =>
-          gl.setClearColor(new THREE.Color(0x000000), transparent ? 0 : 1)
-        }
+        style={{ touchAction: "none" }}
+        onCreated={({ gl }) => {
+          gl.setClearColor(new THREE.Color(0x000000), transparent ? 0 : 1);
+          gl.domElement.style.touchAction = "none";
+        }}
       >
         <ambientLight intensity={Math.PI} />
         <Physics gravity={gravity} timeStep={1 / 60}>
-          <Band />
+          <Band onCardScreenPosition={onCardScreenPosition} />
         </Physics>
         <Environment blur={0.75}>
           <Lightformer
@@ -90,9 +102,14 @@ export default function Lanyard({
 interface BandProps {
   maxSpeed?: number;
   minSpeed?: number;
+  onCardScreenPosition?: (point: ScreenPoint) => void;
 }
 
-function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
+function Band({
+  maxSpeed = 50,
+  minSpeed = 0,
+  onCardScreenPosition,
+}: BandProps) {
   // Using "any" for refs since the exact types depend on Rapier's internals
   const band = useRef<any>(null);
   const fixed = useRef<any>(null);
@@ -105,6 +122,8 @@ function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
   const ang = new THREE.Vector3();
   const rot = new THREE.Vector3();
   const dir = new THREE.Vector3();
+  const projectedCard = new THREE.Vector3();
+  const cardPosition = new THREE.Vector3();
 
   const segmentProps: any = {
     type: "dynamic" as RigidBodyProps["type"],
@@ -196,6 +215,20 @@ function Band({ maxSpeed = 50, minSpeed = 0 }: BandProps) {
       ang.copy(card.current.angvel());
       rot.copy(card.current.rotation());
       card.current.setAngvel({ x: ang.x, y: ang.y - rot.y * 0.25, z: ang.z });
+    }
+
+    if (card.current && onCardScreenPosition) {
+      const translation = card.current.translation();
+      const canvasRect = state.gl.domElement.getBoundingClientRect();
+
+      cardPosition.set(translation.x, translation.y - 0.85, translation.z);
+      projectedCard
+        .copy(cardPosition)
+        .project(state.camera);
+      onCardScreenPosition({
+        x: canvasRect.left + (projectedCard.x * 0.5 + 0.5) * canvasRect.width,
+        y: canvasRect.top + (-projectedCard.y * 0.5 + 0.5) * canvasRect.height,
+      });
     }
   });
 

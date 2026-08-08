@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import { TextPlugin } from "gsap/TextPlugin";
@@ -6,7 +6,8 @@ import { FiArrowUpRight, FiMail } from "react-icons/fi";
 
 import Header from "../../components/Header/Header";
 import ContactModal from "../../components/Lanyard/ContactModal";
-import homePortrait from "../../assets/Photo/ahmetalpsamur_home_resized.jpg";
+import RippleDistortion from "../../components/RippleDistortion";
+import homePortrait from "../../assets/Photo/ahmetalpsamur_home_resized_transp.png";
 
 gsap.registerPlugin(TextPlugin);
 
@@ -15,6 +16,7 @@ const Home = () => {
   const detailsRef = useRef<HTMLDivElement>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [isContactModalVisible, setIsContactModalVisible] = useState(false);
+  const [isContactModalClosing, setIsContactModalClosing] = useState(false);
 
   useEffect(() => {
     const intro = gsap.timeline({ delay: 0.35 });
@@ -37,9 +39,22 @@ const Home = () => {
     };
   }, []);
 
-  const toggleContactModal = () => {
-    setIsContactModalVisible((isVisible) => !isVisible);
-  };
+  const toggleContactModal = useCallback(() => {
+    if (!isContactModalVisible) {
+      setIsContactModalClosing(false);
+      setIsContactModalVisible(true);
+      return;
+    }
+
+    if (!isContactModalClosing) {
+      setIsContactModalClosing(true);
+    }
+  }, [isContactModalClosing, isContactModalVisible]);
+
+  const finishContactModalClose = useCallback(() => {
+    setIsContactModalVisible(false);
+    setIsContactModalClosing(false);
+  }, []);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -66,7 +81,9 @@ const Home = () => {
 
       <ContactModal
         isVisible={isContactModalVisible}
+        isClosing={isContactModalClosing}
         onClose={toggleContactModal}
+        onClosed={finishContactModalClose}
         onCopy={copyToClipboard}
         copiedText={copiedText}
       />
@@ -168,12 +185,20 @@ const Home = () => {
           className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-52 bg-gradient-to-t from-black via-black/55 to-transparent lg:hidden"
         />
 
-        <img
+        <RippleDistortion
           src={homePortrait}
           alt="Ahmet Alp Samur"
-          className="pointer-events-none absolute bottom-0 left-1/2 z-10 h-[calc(100%-4.7rem)] w-[125vw] max-w-none -translate-x-1/2 object-contain object-bottom sm:h-[calc(100%-5.5rem)] sm:w-[min(92vw,900px)]"
-          loading="eager"
-          fetchPriority="high"
+          strength={0.18}
+          swirl={0.8}
+          rings={4}
+          brushSize={135}
+          spread={4.5}
+          fade={2.6}
+          clickStrength={1.8}
+          grayscale={false}
+          tintAmount={0}
+          quality="medium"
+          className="absolute bottom-0 left-1/2 z-10 h-[calc(100%-4.7rem)] w-[125vw] max-w-none -translate-x-1/2 touch-manipulation sm:h-[calc(100%-5.5rem)] sm:w-[min(92vw,900px)]"
         />
       </main>
     </div>

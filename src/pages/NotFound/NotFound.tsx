@@ -1,29 +1,27 @@
+import { Link } from "react-router-dom";
 
-import { Link } from 'react-router-dom';
-import videoBg from '../../assets/Video/404-video/404_background_cut_delete.mp4';
-import FuzzyText from '../../components/FuzzyText'; // FuzzyText bileşenini import ediyoruz
+import FuzzyText from "../../components/FuzzyText";
+import videoBg from "../../assets/Video/404-video/404_background_cut_delete.mp4";
 
 const NotFound = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
-      {/* Video Background (MP4 + WebM) */}
-      <video 
-        autoPlay 
-        loop 
-        muted 
+      <video
+        autoPlay
+        loop
+        muted
         playsInline
-        className="absolute top-0 left-0 w-full h-full object-cover opacity-70"
+        className="absolute left-0 top-0 h-full w-full object-cover opacity-70"
       >
         <source src={videoBg} type="video/mp4" />
       </video>
 
-      {/* İçerik */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-[#EAEAEA] p-4 text-center">
-        <div className="mb-4">
-          <FuzzyText 
-            baseIntensity={0.2} 
-            hoverIntensity={0.5} 
-            enableHover={true}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-4 text-center text-[#EAEAEA]">
+        <div className="mb-4 max-w-full [&>canvas]:h-auto [&>canvas]:max-w-full">
+          <FuzzyText
+            baseIntensity={0.2}
+            hoverIntensity={0.5}
+            enableHover
             fontSize="9rem"
             fontWeight={900}
             color="#ffffff"
@@ -31,13 +29,15 @@ const NotFound = () => {
             404
           </FuzzyText>
         </div>
-        <h2 className="text-3xl font-semibold mb-6">Kayboldun Belki de Kaybolmak istedin kim bilir ?</h2>
-        <p className="text-lg mb-8 max-w-2xl">
+        <h2 className="mb-6 text-3xl font-semibold">
+          Kayboldun, belki de kaybolmak istedin; kim bilir?
+        </h2>
+        <p className="mb-8 max-w-2xl text-lg">
           Bu koordinatlarda bir sayfa yok. Ana üsse dönüp yeni bir rota çizelim!
         </p>
-        <Link 
-          to="/" 
-          className="inline-block px-8 py-3 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition duration-300 hover:scale-105"
+        <Link
+          to="/"
+          className="inline-block rounded-lg bg-white px-8 py-3 font-medium text-black transition duration-300 hover:scale-105 hover:bg-gray-200"
         >
           Ana Üsse Dön
         </Link>
